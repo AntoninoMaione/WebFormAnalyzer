@@ -27,16 +27,13 @@ header{border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:
 .dots{display:flex;gap:4px}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:all .3s}
 .dot.active{background:var(--accent);box-shadow:0 0 8px rgba(59,130,246,.5)}.dot.done{background:var(--green)}
-
-/* API KEY */
 .key-section{margin:14px 16px 0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .key-header{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
 .key-title{font-size:11px;font-family:var(--mono);color:var(--text2);display:flex;align-items:center;gap:6px}
 .key-status{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:3px}
 .key-status.set{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)}
 .key-status.unset{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.2)}
-.key-body{padding:0 12px 12px;display:none}
-.key-body.open{display:block}
+.key-body{padding:0 12px 12px;display:none}.key-body.open{display:block}
 .key-input-wrap{display:flex;gap:6px;margin-top:8px}
 .key-input{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:5px;padding:7px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none}
 .key-input:focus{border-color:var(--accent)}
@@ -44,7 +41,6 @@ header{border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:
 .key-save{background:var(--accent);border:none;border-radius:5px;padding:7px 12px;cursor:pointer;font-size:11px;color:white;font-family:var(--mono);white-space:nowrap}
 .key-save:hover{background:#2563eb}
 .key-note{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:7px;line-height:1.5}
-
 .drop-zone{margin:14px 16px 0;border:1.5px dashed var(--border2);border-radius:8px;padding:24px 14px;text-align:center;cursor:pointer;transition:all .25s;position:relative;background:var(--bg)}
 .drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:rgba(59,130,246,.04)}
 .drop-icon{font-size:22px;margin-bottom:7px;display:block;opacity:.6}
@@ -64,6 +60,11 @@ header{border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:
 .ai-info{margin:8px 16px 0;padding:9px 11px;border-radius:6px;font-size:11px;font-family:var(--mono);line-height:1.6}
 .ai-info.ai{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);color:var(--green)}
 .ai-info.txt{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);color:var(--accent2)}
+.model-row{margin:8px 16px 0}
+.model-row label{font-size:10px;font-family:var(--mono);color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em}
+.model-row select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--text2);outline:none;cursor:pointer}
+.model-row select:focus{border-color:var(--accent)}
+.model-note{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:5px;line-height:1.5}
 .run-btn{margin:10px 16px 0;padding:10px;color:white;border:none;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;display:none;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#0d9488)}
 .run-btn.show{display:flex}
 .run-btn:hover{filter:brightness(1.1)}
@@ -137,7 +138,7 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
       <div class="dots"><div class="dot active" id="d1"></div><div class="dot" id="d2"></div><div class="dot" id="d3"></div></div>
     </div>
 
-    <!-- API KEY SECTION -->
+    <!-- API KEY -->
     <div class="key-section">
       <div class="key-header" onclick="toggleKey()">
         <span class="key-title">
@@ -153,8 +154,8 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
           <button class="key-save" onclick="saveKey()">Save</button>
         </div>
         <div class="key-note">
-          🔒 Stored in memory only — never persisted to disk or sent anywhere except api.anthropic.com. Cleared when the tab is closed.<br>
-          Get a key at: <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent2)">console.anthropic.com</a>
+          🔒 Stored in memory only — never persisted to disk or sent anywhere except api.anthropic.com.<br>
+          Get a key at: <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent2)">console.anthropic.com → Manage → API Keys</a>
         </div>
       </div>
     </div>
@@ -180,7 +181,18 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
     </div>
 
     <div class="ai-info ai" id="ainfo">
-      ✦ AI mode: Claude reads the PDF visually — works on any type including scanned forms, technical tables, and complex layouts (e.g. crankshaft deflection reports).
+      ✦ AI mode: Claude reads the PDF visually — works on any type including scanned forms, technical tables, and complex layouts.
+    </div>
+
+    <!-- MODEL SELECTOR -->
+    <div class="model-row" id="modelRow">
+      <label>Model</label>
+      <select id="modelSelect">
+        <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 — fastest &amp; cheapest ✓</option>
+        <option value="claude-sonnet-4-6">claude-sonnet-4-6 — balanced</option>
+        <option value="claude-opus-4-6">claude-opus-4-6 — most accurate</option>
+      </select>
+      <div class="model-note">💡 Start with Haiku (~25× cheaper than Opus). Upgrade for production if needed.</div>
     </div>
 
     <button class="run-btn" id="rb" onclick="run()" style="display:none">
@@ -221,7 +233,7 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
       <div id="json-view">
         <div class="empty" id="je">
           <div class="empty-icon">✦</div>
-          <div class="empty-label">Set your API key, drop a PDF, click "Analyze with AI"</div>
+          <div class="empty-label">Set API key → drop PDF → Analyze with AI</div>
           <div class="empty-sub">Works on any PDF — scanned forms, tables, complex layouts</div>
         </div>
         <pre id="json-out" style="display:none"></pre>
@@ -244,29 +256,22 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 let curFile = null, schema = null, mode = 'ai', apiKey = '';
 const usedN = {};
 
-// ── API KEY ───────────────────────────────────────────────────────
-function toggleKey() {
-  const b = document.getElementById('keyBody');
-  b.classList.toggle('open');
-}
+function toggleKey() { document.getElementById('keyBody').classList.toggle('open'); }
 function toggleKeyVis() {
-  const inp = document.getElementById('keyInput');
-  const btn = event.target;
-  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
-  else { inp.type = 'password'; btn.textContent = 'Show'; }
+  const inp = document.getElementById('keyInput'), btn = event.target;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
 }
 function saveKey() {
   const val = document.getElementById('keyInput').value.trim();
-  if (!val.startsWith('sk-ant-')) { toast('Key should start with sk-ant-…', 'warn'); return; }
+  if (!val.startsWith('sk-ant-')) { toast('Key must start with sk-ant-…', 'warn'); return; }
   apiKey = val;
   const st = document.getElementById('keyStatus');
-  st.textContent = 'set ✓';
-  st.className = 'key-status set';
+  st.textContent = 'set ✓'; st.className = 'key-status set';
   document.getElementById('keyBody').classList.remove('open');
   toast('API key saved in memory', 'ok');
 }
 
-// ── File load ─────────────────────────────────────────────────────
 const dz = document.getElementById('dz'), fi = document.getElementById('fi');
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('over'));
@@ -275,13 +280,11 @@ fi.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.fi
 
 async function loadFile(f) {
   curFile = f;
-  const fmb = document.getElementById('fmb');
-  fmb.textContent = `${f.name}  ·  ${(f.size / 1024).toFixed(1)} KB`;
-  fmb.classList.add('show');
+  document.getElementById('fmb').textContent = `${f.name}  ·  ${(f.size / 1024).toFixed(1)} KB`;
+  document.getElementById('fmb').classList.add('show');
   document.getElementById('mt').style.display = 'flex';
   document.getElementById('rb').style.display = 'flex';
   setDot(1, 'done'); setDot(2, 'active');
-
   try {
     const ab = await f.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
@@ -302,24 +305,26 @@ function setMode(m) {
   document.getElementById('bai').className = 'mode-btn' + (m === 'ai' ? ' m-ai' : '');
   document.getElementById('btxt').className = 'mode-btn' + (m === 'text' ? ' m-text' : '');
   const btn = document.getElementById('rb'), info = document.getElementById('ainfo');
+  const mr = document.getElementById('modelRow');
   if (m === 'ai') {
     btn.style.background = 'linear-gradient(135deg,#059669,#0d9488)';
     btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Analyze with AI';
     info.className = 'ai-info ai';
-    info.textContent = '✦ AI mode: Claude reads the PDF visually — works on any type including scanned forms, technical tables, and complex layouts.';
+    info.textContent = '✦ AI mode: Claude reads the PDF visually — works on any type including scanned forms and complex tables.';
+    mr.style.display = 'block';
   } else {
     btn.style.background = '#3b82f6';
     btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg> Text Parse';
     info.className = 'ai-info txt';
-    info.textContent = '📝 Text mode: extracts text/AcroForm fields. Works best on native PDFs. Falls back to heuristics for text-only PDFs.';
+    info.textContent = '📝 Text mode: extracts AcroForm fields / text. Falls back to heuristics. No API key needed.';
+    mr.style.display = 'none';
   }
 }
 
-// ── Run ───────────────────────────────────────────────────────────
 async function run() {
   if (!curFile) return;
   if (mode === 'ai' && !apiKey) {
-    toast('Please set your Anthropic API key first', 'warn');
+    toast('Set your Anthropic API key first', 'warn');
     document.getElementById('keyBody').classList.add('open');
     document.getElementById('keyInput').focus();
     return;
@@ -330,16 +335,13 @@ async function run() {
   document.getElementById('fs').classList.remove('show');
   document.getElementById('al').classList.remove('show');
   resetProg(); Object.keys(usedN).forEach(k => delete usedN[k]);
-
   try {
     if (mode === 'ai') await runAI();
     else await runText();
   } catch (e) { toast('Error: ' + e.message, 'err'); log('❌ ' + e.message); }
-
   btn.disabled = false;
 }
 
-// ── AI MODE ───────────────────────────────────────────────────────
 async function runAI() {
   await pA(1);
   const ab = await curFile.arrayBuffer();
@@ -365,7 +367,8 @@ async function runAI() {
   await pD(2);
 
   await pA(3);
-  log('Sending to Claude AI…');
+  const selectedModel = document.getElementById('modelSelect').value;
+  log(`Sending to ${selectedModel}…`);
 
   const imgContent = images.flatMap((b64, i) => [
     { type: 'text', text: `Page ${i + 1} of ${numPages}:` },
@@ -378,7 +381,7 @@ Analyze the PDF page image(s) carefully and generate a COMPLETE, ACCURATE Survey
 
 Rules:
 - Identify ALL fillable fields: text inputs, checkboxes, dropdowns, dates, numbers, textareas
-- For grid/matrix tables (e.g. rows = measurement positions B1/C/T/E/B2, columns = cylinder numbers 1-7): use SurveyJS "matrixdropdown" with cellType "text" or "expression" — set rows and columns correctly
+- For grid/matrix tables (e.g. rows = measurement positions B1/C/T/E/B2, columns = cylinder numbers 1–7): use SurveyJS "matrixdropdown" with cellType "text" — set rows and columns correctly
 - For simple labeled fields (Vessel:, Date:, Port:, etc.): use type "text"
 - For yes/no or checkboxes: use type "boolean"
 - For multi-line remarks/notes: use type "comment"
@@ -387,7 +390,7 @@ Rules:
 - Use snake_case English field names
 - Keep field titles exactly as in the form
 
-CRITICAL: Return ONLY raw JSON — no markdown fences, no backticks, no explanation text before or after. Just the JSON object starting with { and ending with }.
+CRITICAL: Return ONLY raw JSON — no markdown fences, no backticks, no explanation. Just the JSON object.
 
 Required structure:
 {
@@ -407,14 +410,14 @@ Required structure:
       'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: selectedModel,
       max_tokens: 4096,
       system: systemPrompt,
       messages: [{
         role: 'user',
         content: [
           ...imgContent,
-          { type: 'text', text: `Form: "${curFile.name}" (${numPages} page${numPages > 1 ? 's' : ''}). Generate the complete SurveyJS JSON schema for all fillable fields, including matrix/table structures.` }
+          { type: 'text', text: `Form: "${curFile.name}" (${numPages} page${numPages > 1 ? 's' : ''}). Generate the complete SurveyJS JSON schema for all fillable fields including any matrix/table structures.` }
         ]
       }]
     })
@@ -446,13 +449,11 @@ Required structure:
   renderList(schema); renderJSON(schema); renderPreview(schema);
   setDot(2, 'done'); setDot(3, 'done');
   await pD(5);
-
   const qc = countQ(schema);
-  log(`✓ Done — ${qc} questions generated.`);
-  toast(`✓ ${qc} questions · AI Vision · ${numPages} page(s)`, 'ok');
+  log(`✓ Done — ${qc} questions · ${selectedModel}`);
+  toast(`✓ ${qc} questions · ${selectedModel.split('-').slice(0,3).join('-')}`, 'ok');
 }
 
-// ── TEXT MODE ─────────────────────────────────────────────────────
 async function runText() {
   await pA(1);
   const ab = await curFile.arrayBuffer();
@@ -528,7 +529,6 @@ function mkQ(f) {
   return q;
 }
 
-// ── Render ────────────────────────────────────────────────────────
 function renderList(sc) {
   const list = document.getElementById('fl'); list.innerHTML = '';
   const els = [];
@@ -568,7 +568,6 @@ function countQ(sc) {
   return n;
 }
 
-// ── Utils ─────────────────────────────────────────────────────────
 function showTab(n) { document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', ['json', 'preview'][i] === n)); document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active')); document.getElementById(`tp-${n}`).classList.add('active'); }
 function copyJSON() { if (!schema) return; navigator.clipboard.writeText(JSON.stringify(schema, null, 2)).then(() => toast('Copied', 'ok')); }
 function dlJSON() { if (!schema) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' })); a.download = (curFile.name.replace(/\.pdf$/i, '') || 'form') + '.surveyjs.json'; a.click(); toast('Downloaded', 'ok'); }
