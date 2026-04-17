@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebFormAnalyzer — PDF → SurveyJS</title>
+
+<!-- SurveyJS Form Library (jQuery version) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<link href="https://unpkg.com/survey-jquery@1.9.138/defaultV2.min.css" rel="stylesheet"/>
+<script src="https://unpkg.com/survey-core@1.9.138/survey.core.min.js"></script>
+<script src="https://unpkg.com/survey-jquery@1.9.138/survey.jquery.min.js"></script>
+
+<!-- pdf.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:        #0d1117;
+  --bg2:       #161b22;
+  --bg3:       #1c2330;
+  --border:    #2d3748;
+  --border2:   #3d4f63;
+  --accent:    #3b82f6;
+  --accent2:   #60a5fa;
+  --green:     #22c55e;
+  --amber:     #f59e0b;
+  --red:       #ef4444;
+  --text:      #e2e8f0;
+  --text2:     #94a3b8;
+  --text3:     #64748b;
+  --mono:      'DM Mono', monospace;
+  --sans:      'DM Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+}
+
+.logo-icon {
+  width: 26px; height: 26px;
+  background: var(--accent);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: white;
+  font-family: var(--mono);
+}
+
+.logo span { color: var(--text); font-weight: 500; }
+
+.badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(59,130,246,0.12);
+  color: var(--accent2);
+  border: 1px solid rgba(59,130,246,0.25);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+}
+
+.left-panel {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg2);
+}
+
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-size: 11px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+}
+
+.step-indicator { display: flex; align-items: center; gap: 4px; }
+
+.step-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border2);
+  transition: all 0.3s;
+}
+.step-dot.active { background: var(--accent); box-shadow: 0 0 8px rgba(59,130,246,0.5); }
+.step-dot.done   { background: var(--green); }
+
+.drop-zone {
+  margin: 20px;
+  border: 1.5px dashed var(--border2);
+  border-radius: 8px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  background: var(--bg);
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(59,130,246,0.04);
+}
+.drop-icon { font-size: 28px; margin-bottom: 10px; display: block; opacity: 0.7; }
+.drop-label { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+.drop-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.file-info {
+  margin: 0 20px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: none;
+}
+.file-info.visible { display: block; }
+.file-name { font-family: var(--mono); font-size: 12px; color: var(--accent2); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-meta { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+.analyze-btn {
+  margin: 0 20px 20px;
+  padding: 11px 20px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  display: none;
+}
+.analyze-btn.visible { display: flex; }
+.analyze-btn:hover { background: #2563eb; transform: translateY(-1px); }
+.analyze-btn:active { transform: translateY(0); }
+.analyze-btn:disabled { background: var(--border2); cursor: not-allowed; transform: none; }
+
+.progress-section { margin: 0 20px 16px; display: none; }
+.progress-section.visible { display: block; }
+
+.progress-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 12px;
+  color: var(--text3);
+  transition: color 0.3s;
+}
+.progress-step.active { color: var(--text2); }
+.progress-step.done   { color: var(--green); }
+.progress-step.error  { color: var(--red); }
+
+.progress-step-icon {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; flex-shrink: 0; margin-top: 1px;
+  transition: all 0.3s;
+}
+.progress-step.active .progress-step-icon {
+  border-color: var(--accent);
+  background: rgba(59,130,246,0.15);
+  animation: pulse-ring 1.5s infinite;
+}
+.progress-step.done .progress-step-icon {
+  border-color: var(--green);
+  background: rgba(34,197,94,0.12);
+  color: var(--green);
+}
+@keyframes pulse-ring {
+  0%,100%{ box-shadow:0 0 0 0 rgba(59,130,246,0.4); }
+  50%    { box-shadow:0 0 0 4px rgba(59,130,246,0); }
+}
+
+.fields-section { flex:1; overflow-y:auto; padding:0 20px 20px; display:none; }
+.fields-section.visible { display:block; }
+
+.fields-title {
+  font-size: 10px; font-family: var(--mono);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text3); margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.field-count { background: rgba(59,130,246,0.15); color:var(--accent2); padding:1px 7px; border-radius:3px; font-size:10px; }
+
+.field-item {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px; border-radius:5px; margin-bottom:4px;
+  background:var(--bg3); border:1px solid var(--border);
+  font-size:12px; transition:border-color 0.2s;
+}
+.field-item:hover { border-color:var(--border2); }
+
+.field-type-badge {
+  font-family:var(--mono); font-size:9px;
+  padding:2px 6px; border-radius:3px;
+  flex-shrink:0; letter-spacing:0.05em; text-transform:lowercase;
+}
+.ft-text       { background:rgba(59,130,246,0.15); color:#93c5fd; }
+.ft-comment    { background:rgba(168,85,247,0.15);  color:#c4b5fd; }
+.ft-boolean    { background:rgba(34,197,94,0.12);   color:#86efac; }
+.ft-radiogroup { background:rgba(245,158,11,0.15);  color:#fcd34d; }
+.ft-dropdown   { background:rgba(236,72,153,0.12);  color:#f9a8d4; }
+.ft-html       { background:rgba(100,116,139,0.2);  color:#94a3b8; }
+.ft-matrix     { background:rgba(20,184,166,0.15);  color:#5eead4; }
+.ft-image      { background:rgba(239,68,68,0.12);   color:#fca5a5; }
+
+.field-name { flex:1; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.field-col  { font-family:var(--mono); font-size:10px; color:var(--text3); flex-shrink:0; }
+
+.right-panel { display:flex; flex-direction:column; overflow:hidden; }
+
+.tabs {
+  display:flex; border-bottom:1px solid var(--border);
+  background:var(--bg2); padding:0 16px; gap:2px;
+}
+.tab-btn {
+  padding:14px 16px 12px; font-size:12px;
+  font-family:var(--mono); color:var(--text3);
+  background:none; border:none; cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:all 0.2s; letter-spacing:0.03em; margin-bottom:-1px;
+}
+.tab-btn:hover { color:var(--text2); }
+.tab-btn.active { color:var(--accent2); border-bottom-color:var(--accent); }
+
+.tab-content { flex:1; overflow:hidden; display:none; }
+.tab-content.active { display:flex; flex-direction:column; }
+
+.empty-state {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:12px; color:var(--text3);
+}
+.empty-icon  { font-size:40px; opacity:0.3; }
+.empty-label { font-size:13px; font-family:var(--mono); }
+.empty-sub   { font-size:11px; color:var(--text3); opacity:0.7; }
+
+#json-view { flex:1; overflow:auto; padding:20px; }
+
+.json-toolbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 20px; border-bottom:1px solid var(--border);
+  background:var(--bg2);
+}
+.json-stats { font-family:var(--mono); font-size:11px; color:var(--text3); display:flex; gap:16px; }
+.json-stat-val { color:var(--accent2); }
+.toolbar-actions { display:flex; gap:8px; }
+
+.icon-btn {
+  padding:6px 12px; font-size:11px;
+  font-family:var(--mono);
+  background:var(--bg3); border:1px solid var(--border);
+  color:var(--text2); border-radius:4px; cursor:pointer;
+  transition:all 0.2s; display:flex; align-items:center; gap:5px;
+}
+.icon-btn:hover { border-color:var(--border2); color:var(--text); }
+.icon-btn.primary { background:rgba(59,130,246,0.12); border-color:rgba(59,130,246,0.3); color:var(--accent2); }
+.icon-btn.primary:hover { background:rgba(59,130,246,0.2); }
+
+pre#json-output {
+  font-family:var(--mono); font-size:12px;
+  line-height:1.7; color:var(--text2);
+  white-space:pre-wrap; word-break:break-all;
+}
+
+.json-key  { color:#93c5fd; }
+.json-str  { color:#86efac; }
+.json-num  { color:#fcd34d; }
+.json-bool { color:#f9a8d4; }
+.json-null { color:var(--text3); }
+
+#preview-view { flex:1; overflow-y:auto; padding:28px 32px; }
+
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text3); }
+
+#toast {
+  position:fixed; bottom:24px; right:24px;
+  padding:10px 16px;
+  background:var(--bg3); border:1px solid var(--border2);
+  border-radius:6px; font-family:var(--mono); font-size:12px; color:var(--text);
+  opacity:0; transform:translateY(8px);
+  transition:all 0.3s; pointer-events:none; z-index:999;
+}
+#toast.show    { opacity:1; transform:translateY(0); }
+#toast.success { border-color:rgba(34,197,94,0.4);  color:var(--green); }
+#toast.error   { border-color:rgba(239,68,68,0.35); color:var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">W</div>
+    <span>WebFormAnalyzer</span>
+    <span style="color:var(--text3)">/ PDF → SurveyJS</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="badge">Phase 2 · Demo</span>
+    <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">SpecTec · AMOS™</span>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <div class="left-panel">
+    <div class="panel-header">
+      <span class="panel-title">Input</span>
+      <div class="step-indicator">
+        <div class="step-dot active" id="dot1"></div>
+        <div class="step-dot" id="dot2"></div>
+        <div class="step-dot" id="dot3"></div>
+      </div>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+      <span class="drop-icon">📄</span>
+      <div class="drop-label">Drop a PDF form here</div>
+      <div class="drop-sub">or click to browse · PDF only</div>
+      <input type="file" id="fileInput" accept=".pdf">
+    </div>
+
+    <div class="file-info" id="fileInfo">
+      <div class="file-name" id="fileName">—</div>
+      <div class="file-meta" id="fileMeta">—</div>
+    </div>
+
+    <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+      Analyze &amp; Convert
+    </button>
+
+    <div class="progress-section" id="progressSection">
+      <div class="progress-step" id="ps1"><div class="progress-step-icon" id="pi1">1</div><span>Parsing PDF structure</span></div>
+      <div class="progress-step" id="ps2"><div class="progress-step-icon" id="pi2">2</div><span>Detecting form fields</span></div>
+      <div class="progress-step" id="ps3"><div class="progress-step-icon" id="pi3">3</div><span>Inferring layout &amp; columns</span></div>
+      <div class="progress-step" id="ps4"><div class="progress-step-icon" id="pi4">4</div><span>Mapping to SurveyJS types</span></div>
+      <div class="progress-step" id="ps5"><div class="progress-step-icon" id="pi5">5</div><span>Generating JSON schema</span></div>
+    </div>
+
+    <div class="fields-section" id="fieldsSection">
+      <div class="fields-title">
+        Detected Fields
+        <span class="field-count" id="fieldCount">0</span>
+      </div>
+      <div id="fieldsList"></div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('json')">JSON Schema</button>
+      <button class="tab-btn" onclick="switchTab('preview')">Form Preview</button>
+    </div>
+
+    <div class="tab-content active" id="tab-json">
+      <div class="json-toolbar" id="jsonToolbar" style="display:none">
+        <div class="json-stats">
+          <span>questions <span class="json-stat-val" id="statQ">—</span></span>
+          <span>pages <span class="json-stat-val" id="statP">—</span></span>
+          <span>size <span class="json-stat-val" id="statS">—</span></span>
+        </div>
+        <div class="toolbar-actions">
+          <button class="icon-btn" onclick="copyJSON()">⎘ Copy</button>
+          <button class="icon-btn primary" onclick="downloadJSON()">↓ Download .json</button>
+        </div>
+      </div>
+      <div id="json-view">
+        <div class="empty-state" id="jsonEmpty">
+          <div class="empty-icon">{ }</div>
+          <div class="empty-label">No schema generated yet</div>
+          <div class="empty-sub">Upload a PDF and click Analyze</div>
+        </div>
+        <pre id="json-output" style="display:none"></pre>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-preview">
+      <div id="preview-view">
+        <div class="empty-state" id="previewEmpty">
+          <div class="empty-icon">◻</div>
+          <div class="empty-label">No form to preview</div>
+          <div class="empty-sub">Generate a schema first</div>
+        </div>
+        <div id="survey-container" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let currentFile = null;
+let generatedSchema = null;
+
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') loadFile(f);
+  else toast('Only PDF files are supported', 'error');
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+
+function loadFile(file) {
+  currentFile = file;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileMeta').textContent = `${(file.size/1024).toFixed(1)} KB · PDF document`;
+  document.getElementById('fileInfo').classList.add('visible');
+  document.getElementById('analyzeBtn').classList.add('visible');
+  setDot(1,'done'); setDot(2,'active');
+}
+
+async function runAnalysis() {
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  const spinSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>';
+  btn.innerHTML = spinSvg + ' Analyzing...';
+
+  if (!document.getElementById('_spin_style')) {
+    const s = document.createElement('style');
+    s.id = '_spin_style';
+    s.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+    document.head.appendChild(s);
+  }
+
+  document.getElementById('progressSection').classList.add('visible');
+  document.getElementById('fieldsSection').classList.remove('visible');
+  resetProgress(); Object.keys(usedNames).forEach(k => delete usedNames[k]);
+
+  try {
+    await stepActive(1);
+    const arrayBuffer = await currentFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    await delay(400); await stepDone(1);
+
+    await stepActive(2);
+    const { fields, textBlocks, pageCount } = await extractFromPDF(pdf);
+    await delay(300); await stepDone(2);
+
+    await stepActive(3);
+    const layoutGroups = inferLayout(fields, textBlocks);
+    await delay(350); await stepDone(3);
+
+    await stepActive(4);
+    await delay(300); await stepDone(4);
+
+    await stepActive(5);
+    const schema = buildSchema(layoutGroups, currentFile.name, pageCount);
+    generatedSchema = schema;
+    await delay(250); await stepDone(5);
+
+    renderFields(layoutGroups);
+    renderJSON(schema);
+    renderPreview(schema);
+    setDot(2,'done'); setDot(3,'done');
+
+    toast(`✓ ${countQuestions(schema)} questions extracted from ${pageCount} page(s)`, 'success');
+  } catch(err) {
+    console.error(err);
+    toast('Error: ' + err.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg> Re-analyze';
+  btn.style.cssText = 'background:var(--bg3);border:1px solid var(--border2);color:var(--text2)';
+}
+
+async function extractFromPDF(pdf) {
+  const fields = [], textBlocks = [];
+  const pageCount = pdf.numPages;
+
+  for (let p = 1; p <= pageCount; p++) {
+    const page = await pdf.getPage(p);
+    const viewport = page.getViewport({ scale: 1 });
+    const W = viewport.width;
+
+    const annotations = await page.getAnnotations();
+    for (const ann of annotations) {
+      if (ann.subtype === 'Widget') {
+        const rect = ann.rect;
+        const cx = (rect[0] + rect[2]) / 2;
+        fields.push({
+          name: sanitizeName(ann.fieldName || ann.alternativeText || `field_${fields.length+1}`),
+          label: ann.alternativeText || ann.fieldName || `Field ${fields.length+1}`,
+          pdfType: ann.fieldType,
+          column: cx < W * 0.5 ? 'left' : 'right',
+          page: p, rect,
+          options: ann.options || [],
+          required: !!(ann.fieldFlags & 2),
+          multiLine: !!(ann.fieldFlags & 4096),
+        });
+      }
+    }
+
+    const textContent = await page.getTextContent();
+    for (const item of textContent.items) {
+      if (item.str.trim()) {
+        textBlocks.push({ text: item.str.trim(), x: item.transform[4], y: item.transform[5], fontSize: item.height || 10, page: p });
+      }
+    }
+  }
+
+  if (fields.length === 0) synthesizeFieldsFromText(textBlocks, fields);
+  return { fields, textBlocks, pageCount };
+}
+
+function synthesizeFieldsFromText(textBlocks, fields) {
+  const pages = {};
+  for (const b of textBlocks) (pages[b.page] = pages[b.page] || []).push(b);
+
+  for (const [page, blocks] of Object.entries(pages)) {
+    const candidates = blocks.filter(b => b.text.length < 80 && !b.text.match(/^\d+(\.\d+)?$/) && b.text.length > 2);
+    const seen = new Set();
+
+    for (const c of candidates.slice(0, 30)) {
+      const key = c.text.toLowerCase().trim();
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const column      = c.x < 297 ? 'left' : 'right';
+      const isMultiLine = /\b(note|comment|remark|description|observation)\b/i.test(c.text);
+      const isCheckbox  = /\b(yes|no|check|tick|confirm|approved|rejected)\b/i.test(c.text);
+      const isDropdown  = /\b(type|category|class|status|flag|grade|level|department)\b/i.test(c.text);
+      const isDate      = /\b(date|time|from|to|when|period)\b/i.test(c.text);
+      const isNumber    = /\b(qty|quantity|number|nr|no\.|amount|count|total|hours)\b/i.test(c.text);
+      const isHeader    = c.fontSize > 13 || (c.text === c.text.toUpperCase() && c.text.length > 4 && c.text.length < 60 && /[A-Z]/.test(c.text));
+
+      let pdfType = 'Tx';
+      if (isHeader) pdfType = '__header';
+      else if (isCheckbox) pdfType = 'Btn';
+      else if (isDropdown) pdfType = 'Ch';
+      else if (isMultiLine) pdfType = '__multiline';
+      else if (isDate) pdfType = '__date';
+      else if (isNumber) pdfType = '__number';
+
+      fields.push({ name: sanitizeName(c.text), label: c.text, pdfType, column, page: parseInt(page), rect: [c.x, c.y, c.x+150, c.y+20], options: [], required: false, multiLine: isMultiLine, synthesized: true });
+    }
+  }
+}
+
+function sanitizeName(s) {
+  return (s||'field').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').substring(0,40)||'field';
+}
+
+function inferLayout(fields, textBlocks) {
+  const byPage = {};
+  for (const f of fields) (byPage[f.page] = byPage[f.page] || []).push(f);
+  const groups = [];
+
+  for (const [page, pageFields] of Object.entries(byPage)) {
+    const hasLeft  = pageFields.some(f => f.column === 'left');
+    const hasRight = pageFields.some(f => f.column === 'right');
+    const isTwoCol = hasLeft && hasRight;
+    const pageTexts = textBlocks.filter(b => b.page === parseInt(page));
+    const headers   = pageTexts.filter(b => b.fontSize > 13 || (b.text === b.text.toUpperCase() && b.text.length > 4 && b.text.length < 60 && /[A-Z]/.test(b.text)));
+
+    for (const h of headers.slice(0, 2)) groups.push({ type:'html', label:h.text, page:parseInt(page) });
+
+    if (isTwoCol) {
+      const dataFields = pageFields.filter(f => f.pdfType !== '__header');
+      if (dataFields.length > 0) groups.push({ type:'panel2col', fields:dataFields, page:parseInt(page) });
+    } else {
+      for (const f of pageFields.filter(f => f.pdfType !== '__header')) groups.push({ type:'field', field:f, page:parseInt(page) });
+    }
+  }
+  return groups;
+}
+
+function buildSchema(layoutGroups, filename, pageCount) {
+  const title = filename.replace(/\.pdf$/i,'').replace(/[_-]+/g,' ');
+  const elements = [];
+
+  for (const group of layoutGroups) {
+    if (group.type === 'html') {
+      elements.push({ type:'html', name:sanitizeName(group.label)+'_hdr', html:`<h3 style="font-size:15px;font-weight:600;color:#334155;margin:8px 0 4px">${escapeHtml(group.label)}</h3>` });
+    } else if (group.type === 'field') {
+      elements.push(fieldToQuestion(group.field));
+    } else if (group.type === 'panel2col') {
+      const left  = group.fields.filter(f => f.column === 'left');
+      const right = group.fields.filter(f => f.column === 'right');
+      const max   = Math.max(left.length, right.length);
+      const panelElements = [];
+
+      for (let i = 0; i < max; i++) {
+        if (left[i])  { const q = fieldToQuestion(left[i]);  q.startWithNewLine = true;  panelElements.push(q); }
+        if (right[i]) { const q = fieldToQuestion(right[i]); q.startWithNewLine = false; panelElements.push(q); }
+      }
+      elements.push({ type:'panel', name:`panel_page${group.page}`, elements:panelElements });
+    }
+  }
+
+  return {
+    title,
+    description: `Converted from PDF: ${filename}`,
+    pages: [{ name:'page1', elements }],
+    showQuestionNumbers: 'off',
+    showProgressBar: 'off',
+    completedHtml: '<h3>Form submitted successfully.</h3>',
+  };
+}
+
+const usedNames = {};
+function ensureUnique(name) {
+  usedNames[name] = (usedNames[name]||0)+1;
+  return usedNames[name] > 1 ? `${name}_${usedNames[name]}` : name;
+}
+
+function fieldToQuestion(f) {
+  const q = { type:mapType(f), name:ensureUnique(f.name), title:f.label };
+  if (f.required) q.isRequired = true;
+  if (q.type === 'text' && f.pdfType === '__date')   q.inputType = 'date';
+  if (q.type === 'text' && f.pdfType === '__number') q.inputType = 'number';
+  if (['radiogroup','dropdown','checkbox'].includes(q.type)) {
+    q.choices = f.options && f.options.length > 0
+      ? f.options.map(o => ({ value:o.exportValue||o.displayValue, text:o.displayValue||o.exportValue }))
+      : q.type === 'radiogroup'
+        ? [{value:'yes',text:'Yes'},{value:'no',text:'No'},{value:'na',text:'N/A'}]
+        : [{value:'opt1',text:'Option 1'},{value:'opt2',text:'Option 2'},{value:'opt3',text:'Option 3'}];
+  }
+  return q;
+}
+
+function mapType(f) {
+  switch(f.pdfType) {
+    case 'Tx':          return f.multiLine ? 'comment' : 'text';
+    case 'Btn':         return 'boolean';
+    case 'Ch':          return f.options && f.options.length > 4 ? 'dropdown' : 'radiogroup';
+    case '__multiline': return 'comment';
+    case '__date':      return 'text';
+    case '__number':    return 'text';
+    case '__header':    return 'html';
+    default:            return 'text';
+  }
+}
+
+function countQuestions(schema) {
+  let n = 0;
+  for (const page of schema.pages)
+    for (const el of page.elements)
+      if (el.type === 'panel') n += el.elements.length;
+      else if (el.type !== 'html') n++;
+  return n;
+}
+
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderFields(layoutGroups) {
+  const list = document.getElementById('fieldsList');
+  list.innerHTML = '';
+  const fields = [];
+  for (const g of layoutGroups) {
+    if (g.type === 'field') fields.push(g.field);
+    else if (g.type === 'panel2col') fields.push(...g.fields);
+  }
+  document.getElementById('fieldCount').textContent = fields.length;
+  for (const f of fields) {
+    const type = mapType(f);
+    const div = document.createElement('div');
+    div.className = 'field-item';
+    div.innerHTML = `<span class="field-type-badge ft-${type}">${type}</span><span class="field-name" title="${escapeHtml(f.label)}">${escapeHtml(f.label)}</span><span class="field-col">${f.column}</span>`;
+    list.appendChild(div);
+  }
+  document.getElementById('fieldsSection').classList.add('visible');
+}
+
+function renderJSON(schema) {
+  const str = JSON.stringify(schema, null, 2);
+  document.getElementById('json-output').innerHTML = syntaxHighlight(str);
+  document.getElementById('json-output').style.display = 'block';
+  document.getElementById('jsonEmpty').style.display = 'none';
+  document.getElementById('jsonToolbar').style.display = 'flex';
+  document.getElementById('statQ').textContent = countQuestions(schema);
+  document.getElementById('statP').textContent = schema.pages.length;
+  document.getElementById('statS').textContent = (new TextEncoder().encode(str).length/1024).toFixed(1)+' KB';
+}
+
+function renderPreview(schema) {
+  const container = document.getElementById('survey-container');
+  container.innerHTML = '';
+  container.style.display = 'block';
+  document.getElementById('previewEmpty').style.display = 'none';
+  try {
+    const model = new Survey.Model(schema);
+    $(container).Survey({ model });
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--red);font-family:var(--mono);font-size:12px;padding:20px">Preview error: ${e.message}</div>`;
+  }
+}
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(?=\s*:))/g, '<span class="json-key">$1</span>')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")(?!\s*:)/g, '<span class="json-str">$1</span>')
+    .replace(/\b(-?\d+\.?\d*(?:[eE][+-]?\d+)?)\b/g, '<span class="json-num">$1</span>')
+    .replace(/\b(true|false)\b/g, '<span class="json-bool">$1</span>')
+    .replace(/\bnull\b/g, '<span class="json-null">null</span>');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active',['json','preview'][i]===name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+function copyJSON() {
+  if (!generatedSchema) return;
+  navigator.clipboard.writeText(JSON.stringify(generatedSchema,null,2))
+    .then(() => toast('Copied to clipboard','success'))
+    .catch(() => toast('Copy failed','error'));
+}
+
+function downloadJSON() {
+  if (!generatedSchema) return;
+  const blob = new Blob([JSON.stringify(generatedSchema,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (currentFile.name.replace(/\.pdf$/i,'')||'form')+'.surveyjs.json';
+  a.click();
+  toast('Download started','success');
+}
+
+function resetProgress() {
+  for (let i=1;i<=5;i++) {
+    document.getElementById(`ps${i}`).className='progress-step';
+    document.getElementById(`pi${i}`).textContent=i;
+  }
+}
+async function stepActive(n) { document.getElementById(`ps${n}`).className='progress-step active'; await delay(50); }
+async function stepDone(n)   { document.getElementById(`ps${n}`).className='progress-step done'; document.getElementById(`pi${n}`).textContent='✓'; await delay(50); }
+function setDot(n,state)     { document.getElementById(`dot${n}`).className='step-dot '+state; }
+function delay(ms)           { return new Promise(r=>setTimeout(r,ms)); }
+
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className='show '+type;
+  setTimeout(()=>el.className='',3200);
+}
+</script>
+</body>
+</html>
