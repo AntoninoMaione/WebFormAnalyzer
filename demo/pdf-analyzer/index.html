@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WebFormAnalyzer — PDF → SurveyJS (AI Vision)</title>
+<title>WebFormAnalyzer — PDF / PB Source → SurveyJS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <link href="https://unpkg.com/survey-jquery@1.9.138/defaultV2.min.css" rel="stylesheet"/>
 <script src="https://unpkg.com/survey-core@1.9.138/survey.core.min.js"></script>
@@ -11,7 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
-:root{--bg:#0d1117;--bg2:#161b22;--bg3:#1c2330;--border:#2d3748;--border2:#3d4f63;--accent:#3b82f6;--accent2:#60a5fa;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif}
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#1c2330;--border:#2d3748;--border2:#3d4f63;--accent:#3b82f6;--accent2:#60a5fa;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--purple:#a855f7;--purple2:#c084fc;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
 header{border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:100}
@@ -19,7 +19,6 @@ header{border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:
 .logo-icon{width:24px;height:24px;background:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white}
 .logo span{color:var(--text);font-weight:500}
 .badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:rgba(59,130,246,0.12);color:var(--accent2);border:1px solid rgba(59,130,246,0.25);letter-spacing:.08em;text-transform:uppercase}
-.ai-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);letter-spacing:.08em;text-transform:uppercase}
 .workspace{flex:1;display:grid;grid-template-columns:360px 1fr;height:calc(100vh - 52px);overflow:hidden}
 .left-panel{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;background:var(--bg2)}
 .panel-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:10}
@@ -41,8 +40,11 @@ header{border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:
 .key-save{background:var(--accent);border:none;border-radius:5px;padding:7px 12px;cursor:pointer;font-size:11px;color:white;font-family:var(--mono);white-space:nowrap}
 .key-save:hover{background:#2563eb}
 .key-note{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:7px;line-height:1.5}
+/* drop zone */
 .drop-zone{margin:14px 16px 0;border:1.5px dashed var(--border2);border-radius:8px;padding:24px 14px;text-align:center;cursor:pointer;transition:all .25s;position:relative;background:var(--bg)}
 .drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:rgba(59,130,246,.04)}
+.drop-zone.pb-mode{border-color:rgba(168,85,247,.4)}
+.drop-zone.pb-mode:hover,.drop-zone.pb-mode.over{border-color:var(--purple);background:rgba(168,85,247,.05)}
 .drop-icon{font-size:22px;margin-bottom:7px;display:block;opacity:.6}
 .drop-label{font-size:13px;color:var(--text2);margin-bottom:3px}
 .drop-sub{font-size:11px;color:var(--text3);font-family:var(--mono)}
@@ -51,15 +53,21 @@ header{border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:
 .thumb-wrap.show{display:block}
 .thumb-wrap canvas{width:100%;display:block}
 .thumb-label{padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--text3);border-top:1px solid var(--border)}
+/* PB source info box */
+.pb-info{margin:10px 16px 0;padding:9px 11px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.25);border-radius:6px;font-size:10px;font-family:var(--mono);color:var(--purple2);line-height:1.6;display:none;white-space:pre}
+.pb-info.show{display:block}
 .file-meta-bar{margin:8px 16px 0;font-size:11px;color:var(--text3);font-family:var(--mono);display:none}
 .file-meta-bar.show{display:block}
-.mode-toggle{margin:10px 16px 0;display:flex;gap:5px}
-.mode-btn{flex:1;padding:7px;font-size:11px;font-family:var(--mono);border-radius:5px;border:1px solid var(--border);cursor:pointer;transition:all .2s;text-align:center;background:var(--bg3);color:var(--text3)}
+/* 3-button mode toggle */
+.mode-toggle{margin:10px 16px 0;display:flex;gap:4px}
+.mode-btn{flex:1;padding:6px 4px;font-size:10px;font-family:var(--mono);border-radius:5px;border:1px solid var(--border);cursor:pointer;transition:all .2s;text-align:center;background:var(--bg3);color:var(--text3);white-space:nowrap}
 .mode-btn.m-ai{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.35);color:var(--green)}
 .mode-btn.m-text{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.35);color:var(--accent2)}
+.mode-btn.m-pb{background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.35);color:var(--purple2)}
 .ai-info{margin:8px 16px 0;padding:9px 11px;border-radius:6px;font-size:11px;font-family:var(--mono);line-height:1.6}
 .ai-info.ai{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);color:var(--green)}
 .ai-info.txt{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);color:var(--accent2)}
+.ai-info.pb{background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.2);color:var(--purple2)}
 .model-row{margin:8px 16px 0}
 .model-row label{font-size:10px;font-family:var(--mono);color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em}
 .model-row select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--text2);outline:none;cursor:pointer}
@@ -86,9 +94,7 @@ header{border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:
 .ftag{font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:3px;flex-shrink:0}
 .ft-text{background:rgba(59,130,246,.15);color:#93c5fd}.ft-comment{background:rgba(168,85,247,.15);color:#c4b5fd}
 .ft-boolean{background:rgba(34,197,94,.12);color:#86efac}.ft-radiogroup{background:rgba(245,158,11,.15);color:#fcd34d}
-.ft-dropdown{background:rgba(236,72,153,.12);color:#f9a8d4}.ft-html{background:rgba(100,116,139,.2);color:#94a3b8}
-.ft-matrix{background:rgba(20,184,166,.15);color:#5eead4}.ft-matrixdropdown{background:rgba(99,102,241,.15);color:#a5b4fc}
-.ft-panel{background:rgba(59,130,246,.08);color:#93c5fd}
+.ft-dropdown{background:rgba(236,72,153,.12);color:#f9a8d4}.ft-panel{background:rgba(59,130,246,.08);color:#93c5fd}
 .fname{flex:1;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .right-panel{display:flex;flex-direction:column;overflow:hidden}
 .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);padding:0 14px;gap:2px}
@@ -122,10 +128,11 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
   <div class="logo">
     <div class="logo-icon">W</div>
     <span>WebFormAnalyzer</span>
-    <span style="color:var(--text3)">&nbsp;/&nbsp;PDF → SurveyJS</span>
+    <span style="color:var(--text3)">&nbsp;/&nbsp;PDF · PB → SurveyJS</span>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
-    <span class="ai-badge">✦ AI Vision</span>
+    <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);letter-spacing:.08em;text-transform:uppercase">✦ AI Vision</span>
+    <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:rgba(168,85,247,0.12);color:var(--purple2);border:1px solid rgba(168,85,247,0.25);letter-spacing:.08em;text-transform:uppercase">⚙ PB Source</span>
     <span class="badge">Phase 2 · Demo</span>
     <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">SpecTec · AMOS™</span>
   </div>
@@ -138,8 +145,8 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
       <div class="dots"><div class="dot active" id="d1"></div><div class="dot" id="d2"></div><div class="dot" id="d3"></div></div>
     </div>
 
-    <!-- API KEY -->
-    <div class="key-section">
+    <!-- API KEY (visible only in AI mode) -->
+    <div class="key-section" id="keySection">
       <div class="key-header" onclick="toggleKey()">
         <span class="key-title">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
@@ -154,17 +161,17 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
           <button class="key-save" onclick="saveKey()">Save</button>
         </div>
         <div class="key-note">
-          🔒 Stored in memory only — never persisted to disk or sent anywhere except api.anthropic.com.<br>
-          Get a key at: <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent2)">console.anthropic.com → Manage → API Keys</a>
+          🔒 Memory only — never saved to disk.<br>
+          Get key at: <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent2)">console.anthropic.com → API Keys</a>
         </div>
       </div>
     </div>
 
-    <!-- DROP ZONE -->
+    <!-- DROP ZONE — accepts PDF or TXT depending on mode -->
     <div class="drop-zone" id="dz">
-      <span class="drop-icon">📄</span>
-      <div class="drop-label">Drop a PDF form here</div>
-      <div class="drop-sub">or click to browse · PDF only</div>
+      <span class="drop-icon" id="dzIcon">📄</span>
+      <div class="drop-label" id="dzLabel">Drop a PDF form here</div>
+      <div class="drop-sub" id="dzSub">or click to browse · PDF only</div>
       <input type="file" id="fi" accept=".pdf">
     </div>
 
@@ -173,18 +180,23 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
       <div class="thumb-label" id="tl">—</div>
     </div>
 
+    <!-- PB source detection info -->
+    <div class="pb-info" id="pbInfo"></div>
+
     <div class="file-meta-bar" id="fmb">—</div>
 
+    <!-- 3-mode toggle: AI Vision | Text Parse | PB Source -->
     <div class="mode-toggle" id="mt" style="display:none">
-      <button class="mode-btn m-ai" id="bai" onclick="setMode('ai')">✦ AI Vision</button>
-      <button class="mode-btn" id="btxt" onclick="setMode('text')">📝 Text Parse</button>
+      <button class="mode-btn m-ai"  id="bai"  onclick="setMode('ai')">✦ AI Vision</button>
+      <button class="mode-btn"       id="btxt" onclick="setMode('text')">📝 Text Parse</button>
+      <button class="mode-btn"       id="bpb"  onclick="setMode('pb')">⚙ PB Source</button>
     </div>
 
     <div class="ai-info ai" id="ainfo">
       ✦ AI mode: Claude reads the PDF visually — works on any type including scanned forms, technical tables, and complex layouts.
     </div>
 
-    <!-- MODEL SELECTOR -->
+    <!-- MODEL SELECTOR (AI mode only) -->
     <div class="model-row" id="modelRow">
       <label>Model</label>
       <select id="modelSelect">
@@ -201,11 +213,11 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
     </button>
 
     <div class="progress" id="pg">
-      <div class="pstep" id="ps1"><div class="picon" id="pi1">1</div><span>Loading PDF</span></div>
-      <div class="pstep" id="ps2"><div class="picon" id="pi2">2</div><span>Rendering pages to images</span></div>
-      <div class="pstep" id="ps3"><div class="picon" id="pi3">3</div><span>AI analyzing form</span></div>
-      <div class="pstep" id="ps4"><div class="picon" id="pi4">4</div><span>Parsing JSON schema</span></div>
-      <div class="pstep" id="ps5"><div class="picon" id="pi5">5</div><span>Rendering preview</span></div>
+      <div class="pstep" id="ps1"><div class="picon" id="pi1">1</div><span id="ps1lbl">Loading file</span></div>
+      <div class="pstep" id="ps2"><div class="picon" id="pi2">2</div><span id="ps2lbl">Extracting structure</span></div>
+      <div class="pstep" id="ps3"><div class="picon" id="pi3">3</div><span id="ps3lbl">Parsing controls &amp; labels</span></div>
+      <div class="pstep" id="ps4"><div class="picon" id="pi4">4</div><span id="ps4lbl">Building schema</span></div>
+      <div class="pstep" id="ps5"><div class="picon" id="pi5">5</div><span id="ps5lbl">Rendering preview</span></div>
     </div>
 
     <div class="ai-log" id="al"></div>
@@ -233,8 +245,8 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
       <div id="json-view">
         <div class="empty" id="je">
           <div class="empty-icon">✦</div>
-          <div class="empty-label">Set API key → drop PDF → Analyze with AI</div>
-          <div class="empty-sub">Works on any PDF — scanned forms, tables, complex layouts</div>
+          <div class="empty-label">Drop a file and run the analyzer</div>
+          <div class="empty-sub">PDF (AI Vision / Text Parse) · PB DataWindow source (.txt)</div>
         </div>
         <pre id="json-out" style="display:none"></pre>
       </div>
@@ -253,9 +265,10 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-let curFile = null, schema = null, mode = 'ai', apiKey = '';
+let curFile = null, pbSrc = null, schema = null, mode = 'ai', apiKey = '';
 const usedN = {};
 
+// ── API KEY ───────────────────────────────────────────────────────
 function toggleKey() { document.getElementById('keyBody').classList.toggle('open'); }
 function toggleKeyVis() {
   const inp = document.getElementById('keyInput'), btn = event.target;
@@ -272,14 +285,35 @@ function saveKey() {
   toast('API key saved in memory', 'ok');
 }
 
-const dz = document.getElementById('dz'), fi = document.getElementById('fi');
+// ── FILE LOADING ──────────────────────────────────────────────────
+const dz = document.getElementById('dz');
+
+// Drop handler — accepts PDF or TXT depending on current mode
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); const f = e.dataTransfer.files[0]; if (f?.type === 'application/pdf') loadFile(f); else toast('Only PDF files supported', 'err'); });
-fi.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  if (mode === 'pb') {
+    loadPBFile(f);
+  } else {
+    if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) loadPDFFile(f);
+    else toast('Drop a PDF file in this mode', 'warn');
+  }
+});
 
-async function loadFile(f) {
-  curFile = f;
+document.getElementById('fi').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (mode === 'pb') loadPBFile(f);
+  else loadPDFFile(f);
+  e.target.value = ''; // allow re-selecting same file
+});
+
+async function loadPDFFile(f) {
+  curFile = f; pbSrc = null;
+  document.getElementById('pbInfo').classList.remove('show');
   document.getElementById('fmb').textContent = `${f.name}  ·  ${(f.size / 1024).toFixed(1)} KB`;
   document.getElementById('fmb').classList.add('show');
   document.getElementById('mt').style.display = 'flex';
@@ -300,29 +334,101 @@ async function loadFile(f) {
   } catch (e) { console.warn('Thumb:', e); }
 }
 
+async function loadPBFile(f) {
+  curFile = null;
+  document.getElementById('tw').classList.remove('show');
+  pbSrc = await f.text();
+  document.getElementById('fmb').textContent = `${f.name}  ·  ${(f.size / 1024).toFixed(1)} KB`;
+  document.getElementById('fmb').classList.add('show');
+  document.getElementById('mt').style.display = 'flex';
+  document.getElementById('rb').style.display = 'flex';
+  setDot(1, 'done'); setDot(2, 'active');
+  // Quick detection summary
+  const cols = (pbSrc.match(/column=\(type=/g) || []).length;
+  const ctrls = (pbSrc.match(/tabsequence=/g) || []).length;
+  const isDW = pbSrc.includes('datawindow(') || /^release\s+\d/m.test(pbSrc);
+  const info = document.getElementById('pbInfo');
+  info.textContent = isDW
+    ? `✓ PowerBuilder DataWindow detected\n  ${cols} table columns · ${ctrls} input controls`
+    : `⚠ File loaded — structure not recognised as DataWindow\n  ${cols} columns found`;
+  info.classList.add('show');
+}
+
+// ── MODE SWITCHING ────────────────────────────────────────────────
 function setMode(m) {
   mode = m;
-  document.getElementById('bai').className = 'mode-btn' + (m === 'ai' ? ' m-ai' : '');
+  document.getElementById('bai').className  = 'mode-btn' + (m === 'ai'   ? ' m-ai'   : '');
   document.getElementById('btxt').className = 'mode-btn' + (m === 'text' ? ' m-text' : '');
-  const btn = document.getElementById('rb'), info = document.getElementById('ainfo');
-  const mr = document.getElementById('modelRow');
+  document.getElementById('bpb').className  = 'mode-btn' + (m === 'pb'   ? ' m-pb'   : '');
+
+  const btn  = document.getElementById('rb');
+  const info = document.getElementById('ainfo');
+  const mr   = document.getElementById('modelRow');
+  const ks   = document.getElementById('keySection');
+  const dzEl = document.getElementById('dz');
+  const fi   = document.getElementById('fi');
+
   if (m === 'ai') {
     btn.style.background = 'linear-gradient(135deg,#059669,#0d9488)';
     btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Analyze with AI';
     info.className = 'ai-info ai';
     info.textContent = '✦ AI mode: Claude reads the PDF visually — works on any type including scanned forms and complex tables.';
-    mr.style.display = 'block';
-  } else {
+    mr.style.display = 'block'; ks.style.display = 'block';
+    fi.accept = '.pdf';
+    document.getElementById('dzLabel').textContent = 'Drop a PDF form here';
+    document.getElementById('dzSub').textContent   = 'or click to browse · PDF only';
+    document.getElementById('dzIcon').textContent  = '📄';
+    dzEl.classList.remove('pb-mode');
+    document.getElementById('pbInfo').classList.remove('show');
+    setStepLabels('PDF');
+  } else if (m === 'text') {
     btn.style.background = '#3b82f6';
     btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg> Text Parse';
     info.className = 'ai-info txt';
-    info.textContent = '📝 Text mode: extracts AcroForm fields / text. Falls back to heuristics. No API key needed.';
-    mr.style.display = 'none';
+    info.textContent = '📝 Text mode: extracts AcroForm fields / text layers. Falls back to heuristics. No API key needed.';
+    mr.style.display = 'none'; ks.style.display = 'none';
+    fi.accept = '.pdf';
+    document.getElementById('dzLabel').textContent = 'Drop a PDF form here';
+    document.getElementById('dzSub').textContent   = 'or click to browse · PDF only';
+    document.getElementById('dzIcon').textContent  = '📄';
+    dzEl.classList.remove('pb-mode');
+    document.getElementById('pbInfo').classList.remove('show');
+    setStepLabels('PDF');
+  } else { // pb
+    btn.style.background = 'linear-gradient(135deg,#7c3aed,#a855f7)';
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Parse PB Source';
+    info.className = 'ai-info pb';
+    info.textContent = '⚙ PB Source: parses PowerBuilder DataWindow .txt source files. Extracts all columns, choice lists, and UI sections. No API key required.';
+    mr.style.display = 'none'; ks.style.display = 'none';
+    fi.accept = '.txt,.srd,.pbl';
+    document.getElementById('dzLabel').textContent = 'Drop a PowerBuilder source file';
+    document.getElementById('dzSub').textContent   = 'or click to browse · .txt / .srd';
+    document.getElementById('dzIcon').textContent  = '⚙';
+    dzEl.classList.add('pb-mode');
+    setStepLabels('PB');
   }
 }
 
+function setStepLabels(type) {
+  if (type === 'PB') {
+    document.getElementById('ps1lbl').textContent = 'Reading source file';
+    document.getElementById('ps2lbl').textContent = 'Extracting column defs';
+    document.getElementById('ps3lbl').textContent = 'Parsing controls & labels';
+    document.getElementById('ps4lbl').textContent = 'Building SurveyJS schema';
+    document.getElementById('ps5lbl').textContent = 'Rendering preview';
+  } else {
+    document.getElementById('ps1lbl').textContent = 'Loading PDF';
+    document.getElementById('ps2lbl').textContent = 'Rendering pages to images';
+    document.getElementById('ps3lbl').textContent = 'AI analyzing form';
+    document.getElementById('ps4lbl').textContent = 'Parsing JSON schema';
+    document.getElementById('ps5lbl').textContent = 'Rendering preview';
+  }
+}
+
+// ── MAIN RUN ──────────────────────────────────────────────────────
 async function run() {
-  if (!curFile) return;
+  if (mode === 'pb' && !pbSrc) { toast('Drop a PB source file (.txt) first', 'warn'); return; }
+  if (mode !== 'pb' && !curFile) { toast('Drop a PDF file first', 'warn'); return; }
   if (mode === 'ai' && !apiKey) {
     toast('Set your Anthropic API key first', 'warn');
     document.getElementById('keyBody').classList.add('open');
@@ -336,21 +442,22 @@ async function run() {
   document.getElementById('al').classList.remove('show');
   resetProg(); Object.keys(usedN).forEach(k => delete usedN[k]);
   try {
-    if (mode === 'ai') await runAI();
-    else await runText();
+    if (mode === 'ai')        await runAI();
+    else if (mode === 'text') await runText();
+    else                      await runPB();
   } catch (e) { toast('Error: ' + e.message, 'err'); log('❌ ' + e.message); }
   btn.disabled = false;
 }
 
+// ── AI MODE ───────────────────────────────────────────────────────
 async function runAI() {
   await pA(1);
   const ab = await curFile.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
   const numPages = pdf.numPages;
   await pD(1);
-
   await pA(2);
-  log(`Rendering ${numPages} page(s) at 2× resolution…`);
+  log(`Rendering ${numPages} page(s) at 2×…`);
   const images = [];
   for (let p = 1; p <= numPages; p++) {
     const page = await pdf.getPage(p);
@@ -362,98 +469,46 @@ async function runAI() {
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
     const b64 = cv.toDataURL('image/jpeg', 0.88).split(',')[1];
     images.push(b64);
-    log(`  Page ${p}/${numPages} ready (${(b64.length * 0.75 / 1024).toFixed(0)} KB)`);
+    log(`  Page ${p}/${numPages} ready`);
   }
   await pD(2);
-
   await pA(3);
-  const selectedModel = document.getElementById('modelSelect').value;
-  log(`Sending to ${selectedModel}…`);
-
-  const imgContent = images.flatMap((b64, i) => [
+  const sm = document.getElementById('modelSelect').value;
+  log(`Sending to ${sm}…`);
+  const ic = images.flatMap((b64, i) => [
     { type: 'text', text: `Page ${i + 1} of ${numPages}:` },
     { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }
   ]);
-
-  const systemPrompt = `You are an expert at converting PDF forms into SurveyJS JSON schemas.
-
-Analyze the PDF page image(s) carefully and generate a COMPLETE, ACCURATE SurveyJS JSON schema.
-
-Rules:
-- Identify ALL fillable fields: text inputs, checkboxes, dropdowns, dates, numbers, textareas
-- For grid/matrix tables (e.g. rows = measurement positions B1/C/T/E/B2, columns = cylinder numbers 1–7): use SurveyJS "matrixdropdown" with cellType "text" — set rows and columns correctly
-- For simple labeled fields (Vessel:, Date:, Port:, etc.): use type "text"
-- For yes/no or checkboxes: use type "boolean"
-- For multi-line remarks/notes: use type "comment"
-- For dropdowns/selects: use type "dropdown" with choices
-- Preserve logical grouping and visual order of the original form
-- Use snake_case English field names
-- Keep field titles exactly as in the form
-
-CRITICAL: Return ONLY raw JSON — no markdown fences, no backticks, no explanation. Just the JSON object.
-
-Required structure:
-{
-  "title": "string",
-  "description": "string",
-  "pages": [{"name": "page1", "elements": [...]}],
-  "showQuestionNumbers": "off",
-  "completedHtml": "<h3>Submitted successfully.</h3>"
-}`;
-
+  const sys = `You are an expert at converting PDF forms into SurveyJS JSON schemas. Analyze the PDF page image(s) and generate a COMPLETE SurveyJS JSON schema. Rules: identify ALL fillable fields (text,checkbox,dropdown,textarea); for matrix tables use matrixdropdown with cellType text; use snake_case names; preserve grouping and order. CRITICAL: Return ONLY raw JSON, no markdown, no backticks.\n\nRequired: {"title":"...","description":"...","pages":[{"name":"page1","elements":[...]}],"showQuestionNumbers":"off","completedHtml":"<h3>Submitted.</h3>"}`;
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: selectedModel,
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{
-        role: 'user',
-        content: [
-          ...imgContent,
-          { type: 'text', text: `Form: "${curFile.name}" (${numPages} page${numPages > 1 ? 's' : ''}). Generate the complete SurveyJS JSON schema for all fillable fields including any matrix/table structures.` }
-        ]
-      }]
-    })
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: sm, max_tokens: 4096, system: sys, messages: [{ role: 'user', content: [...ic, { type: 'text', text: `Form: "${curFile.name}" (${numPages} pages). Generate complete SurveyJS JSON.` }] }] })
   });
-
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(`API ${resp.status}: ${err.error?.message || resp.statusText}`);
-  }
-
+  if (!resp.ok) { const err = await resp.json().catch(() => ({})); throw new Error(`API ${resp.status}: ${err.error?.message || resp.statusText}`); }
   const data = await resp.json();
   const raw = data.content?.find(c => c.type === 'text')?.text || '';
-  log(`AI responded (${raw.length} chars). Parsing…`);
+  log(`AI responded (${raw.length} chars)`);
   await pD(3);
-
   await pA(4);
   let js = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
   const s = js.indexOf('{'), e = js.lastIndexOf('}');
-  if (s === -1 || e === -1) throw new Error('No valid JSON in AI response: ' + raw.substring(0, 200));
-  js = js.substring(s, e + 1);
-
-  schema = JSON.parse(js);
+  if (s === -1 || e === -1) throw new Error('No valid JSON in AI response');
+  schema = JSON.parse(js.substring(s, e + 1));
   if (!schema.pages) schema.pages = [{ name: 'page1', elements: schema.elements || [] }];
   if (!schema.showQuestionNumbers) schema.showQuestionNumbers = 'off';
   if (!schema.title) schema.title = curFile.name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ');
   await pD(4);
-
   await pA(5);
   renderList(schema); renderJSON(schema); renderPreview(schema);
   setDot(2, 'done'); setDot(3, 'done');
   await pD(5);
   const qc = countQ(schema);
-  log(`✓ Done — ${qc} questions · ${selectedModel}`);
-  toast(`✓ ${qc} questions · ${selectedModel.split('-').slice(0,3).join('-')}`, 'ok');
+  log(`✓ Done — ${qc} questions`);
+  toast(`✓ ${qc} questions · ${sm.split('-').slice(0, 3).join('-')}`, 'ok');
 }
 
+// ── TEXT MODE ─────────────────────────────────────────────────────
 async function runText() {
   await pA(1);
   const ab = await curFile.arrayBuffer();
@@ -466,7 +521,7 @@ async function runText() {
     const vp = page.getViewport({ scale: 1 });
     const anns = await page.getAnnotations();
     const tc = await page.getTextContent({ includeMarkedContent: false });
-    pages.push({ pageNum: p, W: vp.width, H: vp.height, widgets: anns.filter(a => a.subtype === 'Widget'), textItems: tc.items.map(it => ({ text: it.str.trim(), x: it.transform[4], y: it.transform[5], fontSize: Math.abs(it.transform[3]) || 10 })).filter(it => it.text) });
+    pages.push({ pageNum: p, W: vp.width, H: vp.height, widgets: anns.filter(a => a.subtype === 'Widget'), textItems: tc.items.map(it => ({ text: it.str.trim(), x: it.transform[4], y: it.transform[5] })).filter(it => it.text) });
   }
   await dl(200); await pD(2);
   await pA(3);
@@ -523,6 +578,162 @@ async function runText() {
   toast(`✓ ${countQ(schema)} fields (text mode)`, 'ok');
 }
 
+// ================================================================
+// ⚙ PB SOURCE MODE
+// Parses PowerBuilder DataWindow .txt source files directly.
+// No AI / no API key required — pure client-side regex parsing.
+//
+// Pipeline:
+//  1. Read file text (already in pbSrc)
+//  2. Parse table() column defs  → colDefs{name: {type,choices,isLong,default}}
+//  3. Parse column(band=detail, tabsequence=N) → ordered input controls
+//  4. Parse compute() labels     → bilingual EN/IT labels + y-positions
+//  5. Group controls into panels by section header y-position
+//  6. Build SurveyJS schema
+// ================================================================
+async function runPB() {
+  const src = pbSrc;
+  await pA(1);
+  log('Reading PowerBuilder DataWindow source…');
+  // Extract document title
+  let title = 'Form';
+  const dnm = src.match(/print\.documentname="([^"]+)"/);
+  if (dnm) title = dnm[1];
+  await dl(60); await pD(1);
+
+  // ── Step 2: table() column definitions ───────────────────────
+  await pA(2);
+  log('Extracting table column definitions…');
+  const tableRx = /column=\(type=(\S+)\s+updatewhereclause=\S+\s+name=(\S+)\s+dbname="[^"]*"([^)]*?)\)/g;
+  const colDefs = {};
+  for (const m of src.matchAll(tableRx)) {
+    const [, type, name, rest] = m;
+    const initM  = rest.match(/initial="([^"]*)"/);
+    const valsM  = rest.match(/values="([^"]*)"/);
+    const choices = [];
+    if (valsM) {
+      const parts = valsM[1].split('/');
+      for (let i = 0; i < parts.length - 1; i += 2) {
+        const d = parts[i].trim(), c = parts[i + 1].trim();
+        if (d) choices.push({ value: c || d, text: d });
+      }
+    }
+    const isLong = type === 'char(32766)' || /char\(\d{5,}\)/.test(type) || /char\([3-9]\d{3}\)/.test(type);
+    const maxLen = (type.match(/char\((\d+)\)/) || [])[1];
+    colDefs[name] = { type, isLong, defaultValue: initM ? initM[1] : '', choices, maxLen: maxLen ? +maxLen : 0 };
+  }
+  log(`  ${Object.keys(colDefs).length} columns`);
+  await dl(60); await pD(2);
+
+  // ── Step 3: input controls + compute labels ───────────────────
+  await pA(3);
+  log('Parsing controls and bilingual labels…');
+
+  // Input controls ordered by tabsequence
+  const ctrlRx = /column\(band=detail\s+id=(\d+)\s+alignment="\d+"\s+tabsequence=(\d+)[^)]*?name=(\S+)\s+visible="1"([^)]*?)\)/g;
+  const ctrls = [...src.matchAll(ctrlRx)].map(m => {
+    const [, id, tab, name, rest] = m;
+    return { id: +id, tab: +tab, name, isCheckbox: /checkbox\.on=/.test(rest) };
+  }).sort((a, b) => a.tab - b.tab);
+
+  // Compute labels — extract y-position and bilingual text
+  const compRx = /compute\(band=detail[^)]*?expression="([^"]*)"[^)]*?name=(compute_\d+)\s+visible="1"[^)]*y="(\d+)"/g;
+  const computes = [];
+  for (const m of src.matchAll(compRx)) {
+    const [, expr, cname, y] = m;
+    const bil = expr.match(/if\(\s*lingua\s*=\s*'IT'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/i);
+    const en = bil ? bil[2].replace(/:$/, '').trim() : expr.replace(/^'|'$/g, '').replace(/:$/, '').trim();
+    const it = bil ? bil[1].replace(/:$/, '').trim() : en;
+    const isSH = en === en.toUpperCase() && en.length > 3 && !en.includes(':') && !en.includes('(');
+    computes.push({ cname, en, it, y: +y, isSH });
+  }
+  computes.sort((a, b) => a.y - b.y);
+
+  // Build field label lookup: lowercase-alnum key → EN display label
+  const labelMap = {};
+  for (const c of computes) if (!c.isSH) {
+    const k = c.en.toLowerCase().replace(/[^a-z0-9]/g, '');
+    labelMap[k] = c.en;
+  }
+
+  // y-positions of controls
+  const ctrlY = {};
+  for (const ctrl of ctrls) {
+    const m = src.match(new RegExp(`tabsequence=${ctrl.tab}[^)]*?[^\\w]y="(\\d+)"`));
+    ctrlY[ctrl.name] = m ? +m[1] : 0;
+  }
+
+  const sections = computes.filter(c => c.isSH);
+  log(`  ${ctrls.length} controls · ${sections.length} sections · ${Object.keys(labelMap).length} labels`);
+  await dl(60); await pD(3);
+
+  // ── Step 4: build SurveyJS schema ────────────────────────────
+  await pA(4);
+  log('Building SurveyJS schema…');
+
+  function getLabel(name) {
+    const k = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const [mk, mv] of Object.entries(labelMap)) {
+      if (mk === k || k.startsWith(mk) || mk.startsWith(k)) return mv;
+    }
+    return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function buildEl(ctrl) {
+    const col = colDefs[ctrl.name] || {};
+    const label = getLabel(ctrl.name);
+    if (ctrl.isCheckbox) return { type: 'boolean', name: ctrl.name, title: label, titleLocation: 'left', defaultValue: col.defaultValue === '1' || col.defaultValue === 'Y', renderAs: 'checkbox' };
+    if (col.choices && col.choices.length) return { type: 'dropdown', name: ctrl.name, title: label, titleLocation: 'left', choices: col.choices, showOtherItem: false };
+    if (col.isLong) return { type: 'comment', name: ctrl.name, title: label, rows: 3 };
+    return { type: 'text', name: ctrl.name, title: label, titleLocation: 'left', ...(col.maxLen > 0 && col.maxLen <= 500 ? { maxLength: col.maxLen } : {}) };
+  }
+
+  function buildGroup(ctrlArr) {
+    const result = []; let i = 0;
+    while (i < ctrlArr.length) {
+      if (ctrlArr[i].isCheckbox && i + 1 < ctrlArr.length && ctrlArr[i + 1].isCheckbox) {
+        // Consecutive checkboxes → inline panel
+        const grp = []; while (i < ctrlArr.length && ctrlArr[i].isCheckbox) { grp.push(ctrlArr[i]); i++; }
+        result.push({ type: 'panel', name: `grp_${grp[0].name}`, elements: grp.map((c, idx) => ({ ...buildEl(c), startWithNewLine: idx === 0 })) });
+      } else { result.push(buildEl(ctrlArr[i])); i++; }
+    }
+    return result;
+  }
+
+  const panelEls = [];
+  // Controls before first section header
+  const firstSY = sections[0]?.y || Infinity;
+  const beforeFirst = ctrls.filter(c => ctrlY[c.name] < firstSY);
+  if (beforeFirst.length) panelEls.push({ type: 'panel', name: 'sec_header', title, elements: buildGroup(beforeFirst) });
+  // Section panels
+  for (let si = 0; si < sections.length; si++) {
+    const sh = sections[si], yFrom = sh.y, yTo = sections[si + 1]?.y || Infinity;
+    const inSec = ctrls.filter(c => ctrlY[c.name] > yFrom && ctrlY[c.name] < yTo);
+    if (inSec.length) {
+      const panelName = 'sec_' + sh.en.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 30);
+      panelEls.push({ type: 'panel', name: panelName, title: sh.en, elements: buildGroup(inSec) });
+    }
+  }
+
+  schema = {
+    title,
+    description: `Converted from PowerBuilder DataWindow — ${Object.keys(colDefs).length} columns, ${ctrls.length} controls`,
+    locale: 'en',
+    showQuestionNumbers: 'off',
+    completedHtml: '<h3>Submitted successfully.</h3>',
+    pages: [{ name: 'page1', elements: panelEls }]
+  };
+  await dl(60); await pD(4);
+  await pA(5);
+  renderList(schema); renderJSON(schema); renderPreview(schema);
+  setDot(2, 'done'); setDot(3, 'done');
+  await pD(5);
+  const qc = countQ(schema);
+  log(`✓ Done — ${qc} fields from PB source`);
+  toast(`✓ ${qc} fields · PB Source · no API key`, 'ok');
+}
+
+// ── SHARED ────────────────────────────────────────────────────────
 function mkQ(f) {
   const q = { type: f.type || 'text', name: uq(san(f.name || f.label)), title: f.label };
   if (['radiogroup', 'dropdown'].includes(q.type)) q.choices = f.opts?.length > 0 ? f.opts : [{ value: 'yes', text: 'Yes' }, { value: 'no', text: 'No' }, { value: 'na', text: 'N/A' }];
@@ -532,7 +743,8 @@ function mkQ(f) {
 function renderList(sc) {
   const list = document.getElementById('fl'); list.innerHTML = '';
   const els = [];
-  for (const pg of sc.pages || []) for (const el of pg.elements || []) { if (el.type === 'panel') (el.elements || []).forEach(e => els.push(e)); else els.push(el); }
+  function collect(arr) { for (const el of arr || []) { if (el.type === 'panel') collect(el.elements); else els.push(el); } }
+  collect(sc.pages?.[0]?.elements);
   document.getElementById('fc').textContent = els.filter(e => e.type !== 'html').length;
   for (const el of els) {
     if (!el.name && !el.title) continue;
@@ -564,13 +776,21 @@ function renderPreview(sc) {
 
 function countQ(sc) {
   let n = 0;
-  for (const pg of sc.pages || []) for (const el of pg.elements || []) { if (el.type === 'panel') n += (el.elements || []).filter(e => e.type !== 'html').length; else if (el.type !== 'html') n++; }
+  function walk(arr) { for (const el of arr || []) { if (el.type === 'panel') walk(el.elements); else if (el.type !== 'html') n++; } }
+  for (const pg of sc.pages || []) walk(pg.elements);
   return n;
 }
 
 function showTab(n) { document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', ['json', 'preview'][i] === n)); document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active')); document.getElementById(`tp-${n}`).classList.add('active'); }
 function copyJSON() { if (!schema) return; navigator.clipboard.writeText(JSON.stringify(schema, null, 2)).then(() => toast('Copied', 'ok')); }
-function dlJSON() { if (!schema) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' })); a.download = (curFile.name.replace(/\.pdf$/i, '') || 'form') + '.surveyjs.json'; a.click(); toast('Downloaded', 'ok'); }
+function dlJSON() {
+  if (!schema) return;
+  const a = document.createElement('a');
+  const name = (curFile?.name || 'form').replace(/\.(pdf|txt|srd)$/i, '');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' }));
+  a.download = name + '.surveyjs.json';
+  a.click(); toast('Downloaded', 'ok');
+}
 function log(msg) { const el = document.getElementById('al'); el.classList.add('show'); el.textContent = msg; }
 function resetProg() { for (let i = 1; i <= 5; i++) { document.getElementById(`ps${i}`).className = 'pstep'; document.getElementById(`pi${i}`).textContent = i; } }
 async function pA(n) { document.getElementById(`ps${n}`).className = 'pstep active'; await dl(40); }
