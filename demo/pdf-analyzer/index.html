@@ -131,8 +131,8 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
     <span style="color:var(--text3)">&nbsp;/&nbsp;PDF · PB → SurveyJS</span>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
-    <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);letter-spacing:.08em;text-transform:uppercase">✦ AI Vision</span>
-    <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:rgba(168,85,247,0.12);color:var(--purple2);border:1px solid rgba(168,85,247,0.25);letter-spacing:.08em;text-transform:uppercase">⚙ PB Source</span>
+   <button onclick="setMode('ai')" style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);letter-spacing:.08em;text-transform:uppercase;cursor:pointer">✦ AI Vision</button>
+   <button onclick="setMode('pb')" style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:rgba(168,85,247,0.12);color:var(--purple2);border:1px solid rgba(168,85,247,0.25);letter-spacing:.08em;text-transform:uppercase;cursor:pointer">⚙ PB Source</button>
     <span class="badge">Phase 2 · Demo</span>
     <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">SpecTec · AMOS™</span>
   </div>
@@ -186,7 +186,7 @@ pre#json-out{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--
     <div class="file-meta-bar" id="fmb">—</div>
 
     <!-- 3-mode toggle: AI Vision | Text Parse | PB Source -->
-    <div class="mode-toggle" id="mt" style="display:none">
+    <div class="mode-toggle" id="mt">
       <button class="mode-btn m-ai"  id="bai"  onclick="setMode('ai')">✦ AI Vision</button>
       <button class="mode-btn"       id="btxt" onclick="setMode('text')">📝 Text Parse</button>
       <button class="mode-btn"       id="bpb"  onclick="setMode('pb')">⚙ PB Source</button>
